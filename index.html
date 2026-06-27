@@ -138,27 +138,24 @@
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
         @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
         #loading-spinner { text-align: center; padding: 40px; color: var(--brand-orange); display: none; }
-
-        /* ================= ADDED: ORDER STATUS TRACKER UI ================= */
-        .order-history-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-        .order-history-header { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; cursor: pointer; }
-        .tracker-container { display: none; padding: 20px 10px 10px; }
-        .tracker-container.active { display: block; animation: fadeIn 0.4s; }
         
-        /* The Connecting Line */
-        .progress-line { display: flex; justify-content: space-between; position: relative; margin-bottom: 20px; }
-        .progress-line::before { content: ''; position: absolute; top: 10px; left: 10%; width: 80%; height: 3px; background: var(--border-color); z-index: 1; }
+        /* Order Status Styles */
+        .order-card { background: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; }
+        .order-card:hover { border-color: var(--brand-orange); }
+        .order-card-header { display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+        .order-id { color: var(--brand-orange); font-weight: bold; font-size: 16px; }
+        .order-date { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+        .order-details { display: none; margin-top: 25px; animation: fadeIn 0.3s; border-top: 1px dashed var(--border-color); padding-top: 15px; }
         
-        /* The Dots */
-        .progress-dot { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 25%; }
-        .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--bg-dark); border: 3px solid var(--border-color); transition: 0.4s; }
-        .dot.completed { background: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
-        .dot-label { font-size: 10px; margin-top: 8px; color: var(--text-muted); text-align: center; text-transform: uppercase; font-weight: bold; }
-        .dot.completed ~ .dot-label { color: #2ecc71; }
-        
-        .empty-orders { text-align: center; color: var(--text-muted); padding: 40px 0; }
-        /* ==================================================================== */
-
+        /* 4 Dots Timeline */
+        .timeline { display: flex; align-items: center; justify-content: space-between; position: relative; margin-top: 15px; padding-bottom: 10px; }
+        .timeline-bg-line { content: ''; position: absolute; top: 12px; left: 0; width: 100%; height: 2px; background: var(--border-color); z-index: 1; }
+        .timeline-progress-line { position: absolute; top: 12px; left: 0; height: 2px; background: var(--brand-orange); z-index: 2; transition: width 0.5s ease; }
+        .timeline-step { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; width: 25%; }
+        .dot { width: 26px; height: 26px; background: var(--bg-dark); border: 2px solid var(--border-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: transparent; transition: 0.3s; }
+        .timeline-step.completed .dot { border-color: var(--brand-orange); background: var(--brand-orange); color: #000; }
+        .timeline-label { font-size: 10px; color: var(--text-muted); margin-top: 10px; text-align: center; text-transform: uppercase; font-weight: bold; }
+        .timeline-step.completed .timeline-label { color: var(--text-light); }
     </style>
 </head>
 <body>
@@ -207,8 +204,8 @@
                 <li onclick="switchTab('bestsellers')">BEST SELLERS</li>
                 <li onclick="switchTab('sales')">SALE & OFFERS</li>
                 <li onclick="switchTab('cart')">MY CART</li>
-                <li onclick="switchTab('orders')">ORDER STATUS</li>
                 <li onclick="switchTab('account')">MY ACCOUNT</li> 
+                <li onclick="openOrderStatus()">ORDER STATUS</li>
             </ul>
         </nav>
 
@@ -240,7 +237,7 @@
                 <div class="grid-2" id="dynamic-products-grid"></div>
             </div>
         </div>
-
+        
         <div id="bestsellers-view" class="view-section"><div class="section-container"><h2 class="section-title">Best Sellers</h2><div class="grid-2" id="bestsellers-grid"></div></div></div>
         <div id="sales-view" class="view-section"><div class="section-container"><h2 class="section-title">Sale & Offers</h2><div class="grid-2" id="sales-grid"></div></div></div>
 
@@ -261,7 +258,7 @@
                 <button class="action-btn btn-buy-now" onclick="buyNow()">Buy Now</button>
             </div>
         </div>
-        
+
         <div id="cart-view" class="view-section">
             <div class="section-container">
                 <h2 class="section-title">Shopping Cart</h2>
@@ -273,13 +270,16 @@
         <div id="checkout-bill-view" class="view-section">
             <div class="section-container">
                 <div class="sub-header"><i class="fas fa-arrow-left back-btn" onclick="switchTab('cart')"></i><h2 class="section-title" style="margin:0;">Order Summary</h2></div>
+                
                 <div id="bill-items-container"></div>
+                
                 <div class="bill-summary">
                     <div class="bill-row"><span>Items Total</span><span id="bill-item-total">$0.00</span></div>
                     <div class="bill-row"><span>Delivery Charges</span><span style="color:#2ecc71;">$0.00</span></div>
                     <div class="bill-row"><span>Platform Fee</span><span style="color:#2ecc71;">$0.00</span></div>
                     <div class="bill-row bill-total"><span>To Pay</span><span id="bill-final-total">$0.00</span></div>
                 </div>
+                
                 <button class="checkout-btn" onclick="goToCheckoutInfo()">PLACE ORDER</button>
             </div>
         </div>
@@ -294,11 +294,13 @@
                     <input type="text" id="order-name" placeholder="Enter your full name">
                     <button class="checkout-btn" onclick="nextCheckoutStep(2)">NEXT</button>
                 </div>
+                
                 <div id="step-2" class="checkout-step">
                     <label>Mobile Number</label>
                     <input type="tel" id="order-mobile" placeholder="Enter your 10-digit number">
                     <button class="checkout-btn" onclick="nextCheckoutStep(3)">NEXT</button>
                 </div>
+                
                 <div id="step-3" class="checkout-step">
                     <label>Door Number</label>
                     <input type="text" id="order-door" placeholder="e.g. 12/A">
@@ -310,6 +312,7 @@
                     <input type="number" id="order-pincode" placeholder="e.g. 600001">
                     <button class="checkout-btn" onclick="nextCheckoutStep(4)">NEXT</button>
                 </div>
+                
                 <div id="step-4" class="checkout-step">
                     <label>State (Within India)</label>
                     <select id="order-state">
@@ -345,12 +348,14 @@
             </div>
         </div>
 
-        <div id="orders-view" class="view-section">
+        <div id="order-status-view" class="view-section">
             <div class="section-container">
-                <h2 class="section-title">Order Status</h2>
-                <div id="user-orders-container">
-                    <div class="empty-orders">Please log in to view your orders.</div>
+                <div class="sub-header">
+                    <i class="fas fa-arrow-left back-btn" onclick="switchTab('home')"></i>
+                    <h2 class="section-title" style="margin:0;">My Orders</h2>
                 </div>
+                <div id="orders-container">
+                    </div>
             </div>
         </div>
 
@@ -400,6 +405,7 @@
             fetchStoreData();
         });
 
+          // --- Fetch Data ---
         async function fetchStoreData() {
             document.getElementById('loading-spinner').style.display = 'block';
             try {
@@ -457,7 +463,7 @@
             if (query.trim() === "") { grid.innerHTML = ""; return; }
             grid.innerHTML = window.storeProducts.filter(p => (p.Name && p.Name.toLowerCase().includes(query)) || (p.Keywords && p.Keywords.toLowerCase().includes(query))).map(generateProductCard).join('');
         }
-
+        
         // --- PRODUCT DETAIL LOGIC ---
         function openProductDetail(id) {
             const prod = window.storeProducts.find(p => p.id === id);
@@ -559,7 +565,7 @@
             });
         }
 
-  function removeFromCart(index) { cart.splice(index, 1); updateCartUI(); }
+        function removeFromCart(index) { cart.splice(index, 1); updateCartUI(); }
 
         // --- BILL SCREEN LOGIC ---
         function renderBillScreen() {
@@ -690,7 +696,7 @@
             });
         }
 
-        // --- AUTHENTICATION & ACCOUNT LOGIC ---
+         // --- AUTHENTICATION & ACCOUNT LOGIC ---
         const authModal = document.getElementById("auth-modal");
         function openAuth(type) { authModal.style.display = "flex"; switchAuth(type); }
         function closeAuth() { authModal.style.display = "none"; }
@@ -768,94 +774,101 @@
             switchTab('home'); 
         }
 
-        // ================= ADDED: ORDER TRACKING LOGIC =================
-        async function loadUserOrders() {
-            const userName = localStorage.getItem("scorpion_user_name");
-            const container = document.getElementById("user-orders-container");
-
-            if (!userName) {
-                container.innerHTML = '<div class="empty-orders">Please log in to view your orders.</div>';
+        // --- ORDER STATUS LOGIC ---
+        function openOrderStatus() {
+            const userEmail = localStorage.getItem("scorpion_user_email");
+            if (!userEmail) {
+                alert("Please log in to view your orders.");
+                openAuth('login');
                 return;
             }
-
-            container.innerHTML = '<div class="empty-orders"><i class="fas fa-spinner fa-spin"></i> Loading your secure orders...</div>';
-
-            try {
-                // Tells your google script to get orders for this specific customer
-                const fetchUrl = `${SCRIPT_URL}?action=getUserOrders&name=${encodeURIComponent(userName)}`;
-                const response = await fetch(fetchUrl);
-                const data = await response.json();
-
-                if (data.orders && data.orders.length > 0) {
-                    container.innerHTML = '';
-                    
-                    // Reversing to show the most recent orders at the very top
-                    data.orders.reverse().forEach((order, index) => {
-                        
-                        // Default to step 1 if the admin hasn't set a status number
-                        const statusLevel = parseInt(order.Status) || 1; 
-                        
-                        // Safely handle missing dates or data
-                        const date = order.Date || "Recent";
-                        const items = order.Items || "No items listed";
-                        const total = order.Total || "0.00";
-                        const orderId = index;
-
-                        container.innerHTML += `
-                            <div class="order-history-card">
-                                <div class="order-history-header" onclick="toggleOrderStatus(${orderId})">
-                                    <div>
-                                        <strong style="color:var(--brand-orange); display:block; margin-bottom:5px;">Order on ${date}</strong>
-                                        <span style="font-size:12px; color:var(--text-muted);">${items}</span>
-                                    </div>
-                                    <div style="text-align:right;">
-                                        <strong style="color:#2ecc71;">$${total}</strong><br>
-                                        <span style="font-size:12px; color:var(--text-muted); margin-top: 5px; display:inline-block;">
-                                            Track Order <i class="fas fa-chevron-down"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="tracker-container" id="tracker-${orderId}">
-                                    <div class="progress-line">
-                                        <div class="progress-dot">
-                                            <div class="dot ${statusLevel >= 1 ? 'completed' : ''}"></div>
-                                            <span class="dot-label" style="${statusLevel >= 1 ? 'color:#2ecc71;' : ''}">In-Transit</span>
-                                        </div>
-                                        <div class="progress-dot">
-                                            <div class="dot ${statusLevel >= 2 ? 'completed' : ''}"></div>
-                                            <span class="dot-label" style="${statusLevel >= 2 ? 'color:#2ecc71;' : ''}">Reached Destination</span>
-                                        </div>
-                                        <div class="progress-dot">
-                                            <div class="dot ${statusLevel >= 3 ? 'completed' : ''}"></div>
-                                            <span class="dot-label" style="${statusLevel >= 3 ? 'color:#2ecc71;' : ''}">Out for Delivery</span>
-                                        </div>
-                                        <div class="progress-dot">
-                                            <div class="dot ${statusLevel >= 4 ? 'completed' : ''}"></div>
-                                            <span class="dot-label" style="${statusLevel >= 4 ? 'color:#2ecc71;' : ''}">Delivered</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    container.innerHTML = '<div class="empty-orders">You have no orders yet. Head to the store!</div>';
-                }
-            } catch(e) {
-                console.error("Order fetch error:", e);
-                container.innerHTML = '<div class="empty-orders" style="color:#ff6b6b;">Network error. Could not load orders.</div>';
-            }
+            switchTab('order-status');
+            fetchUserOrders(userEmail);
         }
 
-        // Hides/Shows the dropdown tracking animation
-        function toggleOrderStatus(id) {
-            const tracker = document.getElementById(`tracker-${id}`);
-            if(tracker.classList.contains('active')) {
-                tracker.classList.remove('active');
+        function fetchUserOrders(email) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--brand-orange);"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading orders...</p></div>`;
+
+            const formData = new FormData();
+            formData.append("action", "getOrders");
+            formData.append("email", email);
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: new URLSearchParams(formData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "Success" && data.orders && data.orders.length > 0) {
+                    renderOrders(data.orders);
+                } else {
+                    container.innerHTML = "<p style='text-align:center; color:var(--text-muted); padding: 40px 0;'>No orders found.</p>";
+                }
+            })
+            .catch(err => {
+                console.error("Fetch Orders Error:", err);
+                container.innerHTML = "<p style='text-align:center; color:#ff6b6b;'>Network error. Could not fetch orders.</p>";
+            });
+        }
+
+        function renderOrders(orders) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = "";
+
+            // Reverse to show newest orders first
+            orders.reverse().forEach((order, index) => {
+                // Expects statusLevel as a number: 1 (In-Transit), 2 (Reached), 3 (Out for Delivery), 4 (Delivered)
+                const statusLvl = parseInt(order.statusLevel) || 1; 
+                // Calculate line width: Level 1 = 0%, Level 2 = 33%, Level 3 = 66%, Level 4 = 100%
+                const progressWidth = ((statusLvl - 1) / 3) * 100;
+
+                container.innerHTML += `
+                    <div class="order-card" onclick="toggleOrderDetails('order-details-${index}')">
+                        <div class="order-card-header">
+                            <div>
+                                <div class="order-id">Order #${order.orderId || 'Pending'}</div>
+                                <div class="order-date">${order.date || ''}</div>
+                            </div>
+                            <div style="font-weight:bold; color:var(--text-light);">$${order.total || '0.00'}</div>
+                        </div>
+                        
+                        <div id="order-details-${index}" class="order-details">
+                            <p style="font-size:12px; color:var(--text-muted); margin-bottom: 20px;"><strong>Items:</strong> ${order.items || 'N/A'}</p>
+                            
+                            <div class="timeline">
+                                <div class="timeline-bg-line"></div>
+                                <div class="timeline-progress-line" style="width: ${progressWidth}%;"></div>
+                                
+                                <div class="timeline-step ${statusLvl >= 1 ? 'completed' : ''}">
+                                    <div class="dot"><i class="fas fa-check"></i></div>
+                                    <div class="timeline-label">In-Transit</div>
+                                </div>
+                                <div class="timeline-step ${statusLvl >= 2 ? 'completed' : ''}">
+                                    <div class="dot"><i class="fas fa-check"></i></div>
+                                    <div class="timeline-label">Reached<br>Destination</div>
+                                </div>
+                                <div class="timeline-step ${statusLvl >= 3 ? 'completed' : ''}">
+                                    <div class="dot"><i class="fas fa-check"></i></div>
+                                    <div class="timeline-label">Out for<br>Delivery</div>
+                                </div>
+                                <div class="timeline-step ${statusLvl >= 4 ? 'completed' : ''}">
+                                    <div class="dot"><i class="fas fa-check"></i></div>
+                                    <div class="timeline-label">Delivered</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleOrderDetails(id) {
+            const detailsDiv = document.getElementById(id);
+            if (detailsDiv.style.display === "block") {
+                detailsDiv.style.display = "none";
             } else {
-                // Close all other open trackers first so it looks clean
-                document.querySelectorAll('.tracker-container').forEach(t => t.classList.remove('active'));
-                tracker.classList.add('active');
+                detailsDiv.style.display = "block";
             }
         }
 
@@ -882,11 +895,6 @@
             hideAllViews();
             document.getElementById(tabName + '-view').classList.add('active-view');
             
-            // Trigger the secure user order database fetch if they click the new tab
-            if(tabName === 'orders') {
-                loadUserOrders();
-            }
-
             const mainBottomNav = document.getElementById('main-bottom-nav');
             const productActionBar = document.getElementById('product-action-bar');
             
