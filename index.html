@@ -236,9 +236,8 @@
                 <div class="sub-header"><i class="fas fa-arrow-left back-btn" onclick="switchTab('categories')"></i><h2 class="section-title" id="dynamic-category-title" style="margin:0;">Collection</h2></div>
                 <div class="grid-2" id="dynamic-products-grid"></div>
             </div>
-        </div>
-        
-        <div id="bestsellers-view" class="view-section"><div class="section-container"><h2 class="section-title">Best Sellers</h2><div class="grid-2" id="bestsellers-grid"></div></div></div>
+                    </div>
+                    <div id="bestsellers-view" class="view-section"><div class="section-container"><h2 class="section-title">Best Sellers</h2><div class="grid-2" id="bestsellers-grid"></div></div></div>
         <div id="sales-view" class="view-section"><div class="section-container"><h2 class="section-title">Sale & Offers</h2><div class="grid-2" id="sales-grid"></div></div></div>
 
         <div id="product-detail-view" class="view-section" style="padding-top: 0; padding-bottom: 0;">
@@ -371,7 +370,7 @@
 
     <script>
         // ==========================================
-        // PASTE YOUR GOOGLE SCRIPT URL HERE
+        // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
         // ==========================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_IPgh1EYOPO5N6aesoJxBgf_YwvxJYw6LRtvBDmBPvMuqXIb0TMh-w0moDLjAceVebA/exec"; 
         
@@ -405,7 +404,7 @@
             fetchStoreData();
         });
 
-          // --- Fetch Data ---
+        // --- Fetch Data ---
         async function fetchStoreData() {
             document.getElementById('loading-spinner').style.display = 'block';
             try {
@@ -670,6 +669,12 @@
             btn.innerText = "PROCESSING...";
             btn.disabled = true;
 
+            // 1. PING MACRODROID DIRECTLY FROM THE BROWSER (Bypasses Google Server blocks)
+            const MACRODROID_URL = "https://trigger.macrodroid.com/76dc1502-7795-4b78-9fec-b67ae2edf5dd/new_order";
+            fetch(MACRODROID_URL, { mode: 'no-cors' })
+                .catch(err => console.log("Alarm trigger ignored by browser: ", err));
+
+            // 2. SEND ORDER TO GOOGLE SHEETS
             fetch(SCRIPT_URL, {
                 method: "POST",
                 body: new URLSearchParams(formData)
@@ -696,7 +701,7 @@
             });
         }
 
-         // --- AUTHENTICATION & ACCOUNT LOGIC ---
+        // --- AUTHENTICATION & ACCOUNT LOGIC ---
         const authModal = document.getElementById("auth-modal");
         function openAuth(type) { authModal.style.display = "flex"; switchAuth(type); }
         function closeAuth() { authModal.style.display = "none"; }
